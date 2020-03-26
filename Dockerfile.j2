@@ -13,7 +13,7 @@ RUN addgroup -g 450 -S salt && adduser -s /bin/sh -SD -G salt salt && \
 
 ENTRYPOINT ["/usr/bin/dumb-init"]
 {% if salt_version.startswith('2018') %}
-ADD saltinit.py /usr/local/bin/saltinit2.sh
+ADD saltinit2.sh /usr/local/bin/saltinit2.sh
 CMD ["/usr/local/bin/saltinit2.sh"]
 {% else %}
 ADD saltinit.py /usr/local/bin/saltinit
