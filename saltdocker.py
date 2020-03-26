@@ -41,7 +41,7 @@ class SaltVersion(object):
         try:
             tmpfile = tempfile.mkstemp()
             with open(tmpfile[1], 'w') as dfile:
-                print(DOCKERTEMPLATE.render(salt_version=self.version), file=dfile)
+                print(DOCKERTEMPLATE.render(salt_version=str(self.version)), file=dfile)
 
             cwd = os.getcwd()
             if cwd != PATH:
@@ -109,9 +109,11 @@ class SaltVersion(object):
         async with aiohttp.ClientSession() as session:
             async with session.get('https://pypi.org/pypi/salt/json') as response:
                 cls.data = await response.json()
-        versions = sorted(filter(cls._check_version, map(distutils.version.LooseVersion, cls.data['releases'])))
+        versions = [distutils.version.LooseVersion('2018.3.3')]
+        # versions.extend(sorted(filter(cls._check_version, map(distutils.version.LooseVersion, cls.data['releases']))))
         if push is False:
             for idx, version in enumerate(versions):
+                print(f'{idx}: {version}')
                 if idx == 0:
                     await cls(version).build(force=True)
                 else:
