@@ -71,20 +71,26 @@ class SaltVersion(object):
             os.chdir(cwd)
             os.unlink(tmpfile[1])
 
-    async def push(self, latest=False, dryrun=True):
+    async def push(self, latest=False, ecr="saltstack", dryrun=True):
         for tag in [
-                f'saltstack/salt:{self.shortversion}',
-                f'saltstack/salt:{self.version}',
-                f'saltstack/salt:{self.version}-{self.date()}',
-                'saltstack/salt:latest'
+                f'salt:{self.shortversion}',
+                f'salt:{self.version}',
+                f'salt:{self.version}-{self.date()}',
+                'salt:latest'
         ]:
+            reg = f"{ecr}:{tag[5:]}"  # Remove the 'salt:' prefix
             print(tag)
+            print(reg)
             if dryrun is True:
                 continue
             if tag == 'latest' and latest is not True:
                 continue
-            proc = await asyncio.create_subprocess_exec('docker', 'push', tag)
+            if ecr != 'saltstack':
+                tagproc = await asyncio.create_subprocess_exec('docker', 'tag', f'saltstack/{tag}', reg)
+                await tagproc.communicate()
+            proc = await asyncio.create_subprocess_exec('docker', 'push', reg)
             await proc.communicate()
+
 
     @classmethod
     def _check_version(cls, version):
@@ -99,7 +105,7 @@ class SaltVersion(object):
         return True
 
     @classmethod
-    async def build_salt_images(cls, push=False, dryrun=True):
+    async def build_salt_images(cls, push=False, ecr=False, dryrun=True):
         async with aiohttp.ClientSession() as session:
             async with session.get('https://pypi.org/pypi/salt/json') as response:
                 cls.data = await response.json()
@@ -112,16 +118,18 @@ class SaltVersion(object):
                     latest = version == versions[-1]
                     cls.versions.append(cls.loop.create_task(cls(version).build(latest=latest)))
         else:
+            print("Push is True")
             for idx, version in enumerate(versions):
                     latest = version == versions[-1]
-                    cls.versions.append(cls.loop.create_task(cls(version).push(latest=latest, dryrun=dryrun)))
+                    cls.versions.append(cls.loop.create_task(cls(version).push(latest=latest, ecr=ecr, dryrun=dryrun)))
         await asyncio.gather(*cls.versions, loop=cls.loop)
 
 
 @click.command()
+@click.option("--ecr", default="377069709311.dkr.ecr.us-east-1.amazonaws.com/sre/", help="Push to this ECR repo")
 @click.option("--push", is_flag=True, help="Push to hub.docker.io")
 @click.option("--dryrun", is_flag=True, help="Push to hub.docker.io")
-def main(push, dryrun):
+def main(push, ecr, dryrun):
     loop = asyncio.get_event_loop()
     for signame in {'SIGINT', 'SIGTERM'}:
         loop.add_signal_handler(getattr(signal, signame), loop.stop)
@@ -129,7 +137,7 @@ def main(push, dryrun):
         if push is False:
             with open('.lastbuild', 'w') as lastbuild:
                 json.dump({'lastbuild': SaltVersion.date(setting=True)}, lastbuild)
-        loop.run_until_complete(SaltVersion.build_salt_images(push=push, dryrun=dryrun))
+        loop.run_until_complete(SaltVersion.build_salt_images(push=push, ecr=ecr, dryrun=dryrun))
     finally:
         loop.close()
 
