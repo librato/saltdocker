@@ -11,8 +11,9 @@ push:
 	docker login --username $(HUB_USERNAME) --password $(HUB_PASSWORD)
 	poetry run python -m saltdocker --push --ecr=saltstack
 
+# Put the ECR repo into an environment variable called ECR
 pushecr:
 	pip install -U awscli
 	aws ecr get-login-password --region us-east-1 \
-	  | docker login --username AWS  --password-stdin 377069709311.dkr.ecr.us-east-1.amazonaws.com
-	poetry run python -m saltdocker --push --ecr=377069709311.dkr.ecr.us-east-1.amazonaws.com/sre/saltstack
+	  | docker login --username AWS  --password-stdin $$ECR 
+	poetry run python -m saltdocker --push --ecr

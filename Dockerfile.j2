@@ -1,4 +1,8 @@
+{% if salt_version.startswith('2018') %}
+FROM python:2.7-alpine
+{% else %}
 FROM python:3.7-alpine
+{% endif %}
 
 RUN apk add --no-cache gcc g++ autoconf make libffi-dev openssl-dev dumb-init
 
@@ -8,13 +12,19 @@ RUN addgroup -g 450 -S salt && adduser -s /bin/sh -SD -G salt salt && \
     chgrp -R salt /etc/pki /etc/salt /var/cache/salt /var/log/salt /var/run/salt
 
 ENTRYPOINT ["/usr/bin/dumb-init"]
-CMD ["/usr/local/bin/saltinit"]
+{% if salt_version.startswith('2018') %}
+ADD saltinit.py /usr/local/bin/saltinit2.sh
+CMD ["/usr/local/bin/saltinit2.sh"]
+{% else %}
 ADD saltinit.py /usr/local/bin/saltinit
+CMD ["/usr/local/bin/saltinit"]
+{% endif %}
+
 EXPOSE 4505 4506 8000
 # VOLUME /etc/salt/pki/
 
 {% if salt_version.startswith('2018') %}
-RUN pip3 install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL 'msgpack<1.0'
+RUN pip install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL 'msgpack<1.0'
 {% else %}
 RUN pip3 install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL
 {% endif %}

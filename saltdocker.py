@@ -110,7 +110,7 @@ class SaltVersion(object):
             async with session.get('https://pypi.org/pypi/salt/json') as response:
                 cls.data = await response.json()
         versions = [distutils.version.LooseVersion('2018.3.3')]
-        # versions.extend(sorted(filter(cls._check_version, map(distutils.version.LooseVersion, cls.data['releases']))))
+        versions.extend(sorted(filter(cls._check_version, map(distutils.version.LooseVersion, cls.data['releases']))))
         if push is False:
             for idx, version in enumerate(versions):
                 print(f'{idx}: {version}')
@@ -128,18 +128,23 @@ class SaltVersion(object):
 
 
 @click.command()
-@click.option("--ecr", default="377069709311.dkr.ecr.us-east-1.amazonaws.com/sre/", help="Push to this ECR repo")
+@click.option("--ecr", is_flag=True , help="Push to this ECR repo")
 @click.option("--push", is_flag=True, help="Push to hub.docker.io")
 @click.option("--dryrun", is_flag=True, help="Push to hub.docker.io")
 def main(push, ecr, dryrun):
     loop = asyncio.get_event_loop()
+    if ecr:
+        # infer repo from current environment vars
+        ecr_=os.environ.get('ECR')
+    else:
+        ecr_ = 'saltstack'
     for signame in {'SIGINT', 'SIGTERM'}:
         loop.add_signal_handler(getattr(signal, signame), loop.stop)
     try:
         if push is False:
             with open('.lastbuild', 'w') as lastbuild:
                 json.dump({'lastbuild': SaltVersion.date(setting=True)}, lastbuild)
-        loop.run_until_complete(SaltVersion.build_salt_images(push=push, ecr=ecr, dryrun=dryrun))
+        loop.run_until_complete(SaltVersion.build_salt_images(push=push, ecr=ecr_, dryrun=dryrun))
     finally:
         loop.close()
 
