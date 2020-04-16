@@ -24,9 +24,9 @@ EXPOSE 4505 4506 8000
 # VOLUME /etc/salt/pki/
 
 {% if salt_version.startswith('2018') %}
-RUN pip install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL 'msgpack<1.0' 'slackclient<2.0' boto3
+RUN pip install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL 'msgpack<1.0' 'slackclient<2.0' boto3 boto
 {% else %}
-RUN pip3 install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL slackclient boto3
+RUN pip3 install --no-cache-dir salt=={{salt_version}} pycryptodomex CherryPy pyOpenSSL slackclient boto3 boto
 {% endif %}
 
 RUN su - salt -c 'salt-run salt.cmd tls.create_self_signed_cert'
