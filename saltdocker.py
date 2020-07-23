@@ -11,7 +11,7 @@ import aiohttp
 import click
 import jinja2
 
-MINVER = distutils.version.LooseVersion('2018.3.3')
+MINVER = distutils.version.LooseVersion('2019.2.5')
 PATH = os.path.dirname(os.path.abspath(__file__))
 with open(f'{PATH}/Dockerfile.j2') as dockerfile:
     DOCKERTEMPLATE = jinja2.Template(dockerfile.read())
